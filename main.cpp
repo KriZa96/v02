@@ -1,8 +1,19 @@
 #include "nwpwin.h"
 #include "res.h"
 
-// TODO: prepare classes (edit, button, list_box) for child windows
-// TODO: derive from window, override class_name
+class Edit : public vsite::nwp::window {
+protected:
+	std::string class_name() override { return "Edit"; }
+};
+class Button : public vsite::nwp::window {
+protected:
+	std::string class_name() override { return "Button"; }
+};
+class ListBox : public vsite::nwp::window {
+protected:
+	std::string class_name() override { return "ListBox"; }
+};
+
 
 class main_window : public vsite::nwp::window
 {
@@ -10,33 +21,50 @@ protected:
 	int on_create(CREATESTRUCT* pcs) override;
 	void on_command(int id) override;
 	void on_destroy() override;
+
+private:
+	Edit edit;
+	Button add;
+	Button remove;
+	ListBox list_box;
 };
 
 int main_window::on_create(CREATESTRUCT* pcs)
 {
-	// TODO: create all child windows
-	// TODO: disable "Remove" button
+	edit.create(*this, WS_CHILD | WS_VISIBLE | WS_BORDER, 0, IDC_EDIT, 130, 50, 100, 48);
+	list_box.create(*this, WS_CHILD | WS_VISIBLE | WS_BORDER, 0, IDC_LB, 20, 50, 100, 166);
+	add.create(*this, WS_CHILD | WS_VISIBLE | WS_BORDER, "Add", IDC_ADD, 130, 100, 100, 32);
+	remove.create(*this, WS_CHILD | WS_VISIBLE | WS_BORDER, "Remove", IDC_REMOVE, 130, 134, 100, 32);
+	
+	EnableWindow(remove, false);
+
 	return 0;
 }
 
 void main_window::on_command(int id){
-	switch(id){
-		case ID_FILE_EXIT:
-			// TODO: close main window
-			break;
-		case ID_HELP_ABOUT:
-			// TODO: show dialog with text
-			break;
-		case IDC_ADD:
-			// TODO: get text from edit control
-			// TODO: add string to listbox control
-			// TODO: enable "Remove" button
-			break;
-		case IDC_REMOVE:
-			// TODO: get listbox selection
-			// TODO: if there is a selection, delete selected string
-			// TODO: disable "Remove" button if listbox is empty
-			break;
+	switch (id) {
+	case ID_FILE_EXIT:
+		on_destroy();
+		break;
+	case ID_HELP_ABOUT:
+		MessageBox(*this, "Add -> add to list\nRemove -> removes from list.", "Help", MB_OK | MB_ICONINFORMATION);
+		break;
+	case IDC_ADD:
+		char text[64];
+		GetDlgItemText(*this, IDC_EDIT, text, sizeof(text));
+		SendDlgItemMessage(*this, IDC_LB, LB_ADDSTRING, 0, (LPARAM)text);
+		EnableWindow(remove, TRUE);
+		break;
+	case IDC_REMOVE:
+		int list_box_selection = SendMessage(list_box, LB_GETCURSEL, 0, 0);
+		if (list_box_selection != LB_ERR) {
+			SendMessage(list_box, LB_DELETESTRING, list_box_selection, 0);
+		}
+		int list_box_element_num = SendMessage(list_box, LB_GETCOUNT, 0, 0);
+		if (list_box_element_num == 0) {
+			EnableWindow(remove, FALSE);
+		}
+		break;
 	}
 }
 
